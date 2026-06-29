@@ -1,0 +1,23 @@
+; Reference template for /opt/odoo/config/odoo.conf on the server.
+; Real secrets (admin_passwd, db_password) live only on the server in
+; /opt/odoo/config/odoo.conf and /opt/odoo/.env — never commit them.
+[options]
+admin_passwd = __CHANGE_ME__
+db_host = 127.0.0.1
+db_port = 5432
+db_user = odoo
+db_password = __CHANGE_ME__
+db_name = odoo
+dbfilter = ^odoo$
+list_db = False
+http_interface = 127.0.0.1
+http_port = 8069
+proxy_mode = True
+workers = 0
+max_cron_threads = 1
+limit_time_cpu = 120
+limit_time_real = 240
+limit_memory_soft = 1207959552
+limit_memory_hard = 1610612736
+addons_path = /mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons
+data_dir = /var/lib/odoo

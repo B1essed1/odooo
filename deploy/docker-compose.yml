@@ -1,0 +1,15 @@
+# Reference copy of the live stack on the server (/opt/odoo/docker-compose.yml).
+# Odoo runs on the host network, bound to 127.0.0.1:8069 (see odoo.conf),
+# and connects to the host's native PostgreSQL on 127.0.0.1:5432.
+services:
+  odoo:
+    image: odoo:19
+    container_name: odoo
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /opt/odoo/config/odoo.conf:/etc/odoo/odoo.conf:ro
+      - /opt/odoo/addons:/mnt/extra-addons
+      - odoo-data:/var/lib/odoo
+volumes:
+  odoo-data:

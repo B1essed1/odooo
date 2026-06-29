@@ -1,0 +1,64 @@
+name: Deploy Odoo to api.b1-crm.com
+
+# Simple CD pipeline:
+#   push to main (touching custom addons / deploy config)  ->  ship to server  ->  restart Odoo
+#
+# Required GitHub repository secrets (Settings -> Secrets and variables -> Actions):
+#   SSH_HOST          178.105.45.4
+#   SSH_USER          root
+#   SSH_PRIVATE_KEY   contents of the dedicated CI deploy key (ed25519)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'addons_custom/**'
+      - 'deploy/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      update_modules:
+        description: 'Modules to upgrade with -u (comma-separated, or "all"). Leave blank to just restart.'
+        required: false
+        default: ''
+
+concurrency:
+  group: deploy-odoo-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload custom addons to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "addons_custom"
+          target: "/opt/odoo"
+          overwrite: true
+
+      - name: Sync addons and (re)start Odoo
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            # publish repo's custom modules into the mounted addons dir (CI-managed, mirror exactly)
+            rsync -a --delete --exclude='.gitkeep' /opt/odoo/addons_custom/ /opt/odoo/addons/
+            cd /opt/odoo
+            MODS="${{ github.event.inputs.update_modules }}"
+            if [ -n "$MODS" ]; then
+              echo "Upgrading modules: $MODS"
+              docker compose run --rm odoo odoo -c /etc/odoo/odoo.conf -d odoo -u "$MODS" --stop-after-init
+            fi
+            docker compose up -d
+            docker compose restart odoo
+            echo "Deploy complete."

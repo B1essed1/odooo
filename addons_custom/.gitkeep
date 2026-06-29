@@ -1,0 +1,5 @@
+# Put your custom Odoo modules in this folder (one subfolder per module).
+# On push to main, the CI/CD pipeline syncs everything here to the server's
+# /opt/odoo/addons (mounted into the Odoo container as /mnt/extra-addons)
+# and restarts Odoo. Use the "Run workflow" button with a module list to
+# run -u upgrades when you change views/data, not just Python.
